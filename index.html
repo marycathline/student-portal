@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Portal</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid black;
+      }
+      th,
+      td {
+        padding: 8px;
+        text-align: left;
+      }
+      button {
+        padding: 10px 15px;
+        background-color: #16083b;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #120531;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Student Portal</h1>
+
+    <!-- Form to add a new student -->
+    <h3>Add a New Student</h3>
+    <form id="studentForm">
+      <input
+        type="text"
+        id="full_name"
+        placeholder="Full Name"
+        required
+      /><br /><br />
+      <input type="email" id="email" placeholder="Email" required /><br /><br />
+      <input type="date" id="date_of_birth" required /><br /><br />
+      <button type="submit">Add Student</button>
+    </form>
+
+    <hr />
+
+    <h3>Student List</h3>
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Date of Birth</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Student data will be populated here -->
+      </tbody>
+    </table>
+
+    <script>
+      const apiUrl = "http://localhost:3000/students"; // API endpoint
+      const studentForm = document.getElementById("studentForm");
+      const studentsTable = document
+        .getElementById("studentsTable")
+        .getElementsByTagName("tbody")[0];
+
+      // Function to fetch and display students
+async function fetchStudents() {
+    const response = await fetch(apiUrl);
+    const students = await response.json();
+
+    // Clear the table
+    studentsTable.innerHTML = '';
+
+    // Add rows for each student
+    students.forEach(student => {
+        // Format the date_of_birth to local format (YYYY-MM-DD)
+        const dateOfBirth = new Date(student.date_of_birth).toISOString().split('T')[0];  
+
+        const row = studentsTable.insertRow();
+        row.innerHTML = `
+            <td>${student.id}</td>
+            <td>${student.full_name}</td>
+            <td>${student.email}</td>
+            <td>${dateOfBirth}</td>  <!-- Display formatted date -->
+            <td>
+                <button onclick="editStudent(${student.id})">Edit</button>
+                <button onclick="deleteStudent(${student.id})">Delete</button>
+            </td>
+        `;
+    });
+}
+
+
+      // Function to add a new student
+      studentForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const fullName = document.getElementById("full_name").value;
+        const email = document.getElementById("email").value;
+        const dateOfBirth = document.getElementById("date_of_birth").value;
+
+        // Create a new student object
+        const newStudent = {
+          full_name: fullName,
+          email: email,
+          date_of_birth: dateOfBirth,
+        };
+
+        // Send a POST request to add the student
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newStudent),
+        });
+
+        const result = await response.json();
+        alert(result.message); // Show the result message (success or error)
+        fetchStudents(); // Refresh the student list
+      });
+
+      // Function to edit a student's information
+      async function editStudent(id) {
+        // Show an alert (you can add code here to populate a form for editing)
+        alert(`Edit student with ID: ${id}`);
+
+        // Fetch the student data to edit it
+        const response = await fetch(`${apiUrl}/${id}`);
+        const student = await response.json();
+
+        // Pre-fill the form fields with the student data
+        document.getElementById("full_name").value = student.full_name;
+        document.getElementById("email").value = student.email;
+        document.getElementById("date_of_birth").value = student.date_of_birth;
+
+        // Change the form action to update the student on submit
+        studentForm.onsubmit = async function (event) {
+          event.preventDefault();
+
+          const updatedStudent = {
+            full_name: document.getElementById("full_name").value,
+            email: document.getElementById("email").value,
+            date_of_birth: document.getElementById("date_of_birth").value,
+          };
+
+          const updateResponse = await fetch(`${apiUrl}/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updatedStudent),
+          });
+
+          const updateResult = await updateResponse.json();
+          alert(updateResult.message); // Show success or error message
+          fetchStudents(); // Refresh the student list after editing
+        };
+      }
+
+      // Function to delete a student
+      async function deleteStudent(id) {
+        const confirmDelete = confirm(
+          "Are you sure you want to delete this student?"
+        );
+        if (confirmDelete) {
+          const response = await fetch(`${apiUrl}/${id}`, {
+            method: "DELETE",
+          });
+
+          const result = await response.json();
+          alert(result.message); // Show success or error message
+          fetchStudents(); // Refresh the student list after deletion
+        }
+      }
+
+      // Load students when the page loads
+      fetchStudents();
+    </script>
+  </body>
+</html>
